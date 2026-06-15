@@ -3,16 +3,14 @@ const connectDB = require("./config/database");
 const User = require("./models/user");
 const app = express(); //Creating a expressjs application or instance of expressjs application
 
+//This is used to convert JSON data to JS Object
+app.use(express.json());
+
 app.post("/signUp", async (req, res) => {
-    const userObj = {
-        firstName: "Sunil",
-        lastName: "Pandye",
-        emailId: "sunilpande@gmail.com",
-        password: "sunil@989",
-        age: 39,
-        gender: "Male"
-    }
+    //console.log(req.body);
+    const userObj = req.body;
     try {
+        //Creating a new instance of User model
         const user = new User(userObj);
         await user.save();
         res.send("User saved successfully");
