@@ -2,6 +2,8 @@ const express = require("express"); //Importing a express
 const connectDB = require("./config/database");
 const User = require("./models/user");
 const app = express(); //Creating a expressjs application or instance of expressjs application
+const validator = require("validator");
+
 
 //This is used to convert JSON data to JS Object
 app.use(express.json());
@@ -10,6 +12,16 @@ app.post("/signUp", async (req, res) => {
     //console.log(req.body);
     const userObj = req.body;
     try {
+        // Either on schema level or we can do this
+        // if(!validator.isEmail(req.body.emailId)){
+        //     throw new Error("Invalid email id");
+        // }
+
+        // Either on schema level or we can do this
+        // if(!validator.isStrongPassword(userObj?.password)){
+        //     throw new Error("Password is not strong "+userObj.password);
+        // }
+
         //Creating a new instance of User model
         const user = new User(userObj);
         await user.save();
@@ -59,15 +71,31 @@ app.delete("/user", async (req, res) => {
 })
 
 //Update the user
-app.patch("/user", async (req, res) => {
-    const userId = req.body.id;
+app.patch("/user/:userId", async (req, res) => {
+    const userId = req.params?.userId;
     const data = req.body;
     try{
-        const user = await User.findByIdAndUpdate(userId, data, {returnDocument:"after",});
+        const ALLOWED_UPDATE = ["photoUrl", "about", "gender", "age", "skills"];
+        const isUpdateAllowed = Object.keys(data).every((k) =>
+            ALLOWED_UPDATE.includes(k)
+        );
+        if(!isUpdateAllowed){
+            throw new Error("Update not Allowed");
+        }
+
+        //Either on schema level or we can do this
+        // if(data?.skills.length > 10){
+        //     throw new Error("Skills can't be more than 10");
+        // }
+
+        const user = await User.findByIdAndUpdate(userId,
+             data, 
+             {returnDocument:"after", runValidators: true}
+            );
         console.log(user);
         res.send("User updated successfully");
     }catch(err){
-        res.status(500).send("Something went wrong");
+        res.status(500).send("Failed to update user "+ err.message);
     }
 })
 
