@@ -3,15 +3,19 @@ const connectDB = require("./config/database");
 const User = require("./models/user");
 const app = express(); //Creating a expressjs application or instance of expressjs application
 const validator = require("validator");
-
+const {validations} = require("./utils/validation");
+const bcrypt = require("bcrypt");
 
 //This is used to convert JSON data to JS Object
 app.use(express.json());
 
+//signUp 
 app.post("/signUp", async (req, res) => {
     //console.log(req.body);
-    const userObj = req.body;
+    
     try {
+        validations(req);
+        const userObj = req.body;
         // Either on schema level or we can do this
         // if(!validator.isEmail(req.body.emailId)){
         //     throw new Error("Invalid email id");
@@ -22,12 +26,40 @@ app.post("/signUp", async (req, res) => {
         //     throw new Error("Password is not strong "+userObj.password);
         // }
 
+        const {firstName, lastName, emailId, password} = req.body;
+        const passwordHash = await bcrypt.hash(password, 10);
         //Creating a new instance of User model
-        const user = new User(userObj);
+        const user = new User({
+            firstName,
+            lastName,
+            emailId,
+            password: passwordHash
+        });
         await user.save();
         res.send("User saved successfully");
     } catch (err) {
-        res.status(400).send("Error while saving the data: " + err.message);
+        res.status(400).send("ERROR : " + err.message);
+    }
+})
+
+//login
+app.post("/login", async (req,res) => {
+    try{
+        const {emailId, password} = req.body;
+        const user = await User.findOne({emailId: emailId});
+        if(!user){
+            throw new Error("Email or Password is Incorrect");
+        }
+
+        const isPasswordMatch = await bcrypt.compare(password, user.password);
+
+        if(!isPasswordMatch){
+            throw new Error("Email or Password is Incorrect");
+        }else{
+            res.status(200).send("Login in successfully");
+        }
+    }catch(err){
+        res.status(500).send("ERROR : " + err.message);
     }
 })
 
