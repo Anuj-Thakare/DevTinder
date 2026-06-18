@@ -5,9 +5,13 @@ const app = express(); //Creating a expressjs application or instance of express
 const validator = require("validator");
 const {validations} = require("./utils/validation");
 const bcrypt = require("bcrypt");
+const cookieparses = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 //This is used to convert JSON data to JS Object
 app.use(express.json());
+//This is use to read the cookie
+app.use(cookieparses());
 
 //signUp 
 app.post("/signUp", async (req, res) => {
@@ -27,6 +31,7 @@ app.post("/signUp", async (req, res) => {
         // }
 
         const {firstName, lastName, emailId, password} = req.body;
+        //Use to hash the password
         const passwordHash = await bcrypt.hash(password, 10);
         //Creating a new instance of User model
         const user = new User({
@@ -51,15 +56,44 @@ app.post("/login", async (req,res) => {
             throw new Error("Email or Password is Incorrect");
         }
 
+        //This is use to check whether password is matched or not
         const isPasswordMatch = await bcrypt.compare(password, user.password);
 
-        if(!isPasswordMatch){
-            throw new Error("Email or Password is Incorrect");
-        }else{
+        if(isPasswordMatch){
+
+            //Create JWT token
+            const token = await jwt.sign({_id: user._id}, "DEV@Tinder$790");
+            console.log(token); 
+            //Sends back a cookie with JWT to the user
+            res.cookie("token", token);
             res.status(200).send("Login in successfully");
+        }else{
+            throw new Error("Email or Password is Incorrect");
         }
     }catch(err){
         res.status(500).send("ERROR : " + err.message);
+    }
+});
+
+
+app.get("/profile", async (req, res) => {
+    try{
+        const cookies = req.cookies;
+        const { token } = cookies;
+        if(!token){
+            throw new Error("Invalid Token");
+        }
+        const decodedMessage = await jwt.verify(token, "DEV@Tinder$790");
+        const { _id } = decodedMessage;
+        console.log("Logged in user is : " + _id);
+        const user = await User.findById(_id);
+        if(!user){
+            throw new Error("User does not exist");
+        }
+        //console.log(cookies);
+        res.send(user);
+    }catch(err){
+        res.status(500).send("ERROR : "+err.message);
     }
 })
 
@@ -124,7 +158,7 @@ app.patch("/user/:userId", async (req, res) => {
              data, 
              {returnDocument:"after", runValidators: true}
             );
-        console.log(user);
+        //console.log(user);
         res.send("User updated successfully");
     }catch(err){
         res.status(500).send("Failed to update user "+ err.message);
