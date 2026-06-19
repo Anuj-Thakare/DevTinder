@@ -7,6 +7,7 @@ const {validations} = require("./utils/validation");
 const bcrypt = require("bcrypt");
 const cookieparses = require("cookie-parser");
 const jwt = require("jsonwebtoken");
+const { userAuth } = require("./middleware/auth");
 
 //This is used to convert JSON data to JS Object
 app.use(express.json());
@@ -57,15 +58,15 @@ app.post("/login", async (req,res) => {
         }
 
         //This is use to check whether password is matched or not
-        const isPasswordMatch = await bcrypt.compare(password, user.password);
+        const isPasswordMatch = await user.vaildatePassword(password);
 
         if(isPasswordMatch){
 
             //Create JWT token
-            const token = await jwt.sign({_id: user._id}, "DEV@Tinder$790");
-            console.log(token); 
-            //Sends back a cookie with JWT to the user
-            res.cookie("token", token);
+            const token = await user.getJWT();
+            //console.log(token); 
+            //Sends back a cookie with JWT to the user and it will expires in next 8 hrs
+            res.cookie("token", token, { expires: new Date(Date.now() + 8 * 3600000), httpOnly: true });
             res.status(200).send("Login in successfully");
         }else{
             throw new Error("Email or Password is Incorrect");
@@ -76,93 +77,18 @@ app.post("/login", async (req,res) => {
 });
 
 
-app.get("/profile", async (req, res) => {
+app.get("/profile", userAuth, async (req, res) => {
     try{
-        const cookies = req.cookies;
-        const { token } = cookies;
-        if(!token){
-            throw new Error("Invalid Token");
-        }
-        const decodedMessage = await jwt.verify(token, "DEV@Tinder$790");
-        const { _id } = decodedMessage;
-        console.log("Logged in user is : " + _id);
-        const user = await User.findById(_id);
-        if(!user){
-            throw new Error("User does not exist");
-        }
-        //console.log(cookies);
+        const user = req.user;
         res.send(user);
     }catch(err){
         res.status(500).send("ERROR : "+err.message);
     }
 })
 
-//get one user
-app.get("/user", async (req, res) => {
-    const userEmailId = req.body.emailId;
-
-    try{
-        const user = await User.findOne({emailId: userEmailId});
-        if(!user){
-            res.status(404).send("User not found");
-        }else{
-            res.send(user);
-        }
-    }catch(err){
-        res.status(500).send("Something went wrong");
-    }
-    
-})
-
-//Get all user
-app.get("/feed", async (req, res) => {
-    try{
-        const users = await User.find({});
-        res.send(users);
-    }catch(err){
-        res.status(500).send("Something went wrong");
-    }
-})
-
-//delete user
-app.delete("/user", async (req, res) => {
-    const userId = req.body.id;
-    try{
-        //await User.findByIdAndDelete(_id: userId);
-        await User.findByIdAndDelete(userId);
-        res.status(200).send("User deleted successfully");
-    }catch(err){
-        res.status(500).send("Something went wrong");
-    }
-})
-
-//Update the user
-app.patch("/user/:userId", async (req, res) => {
-    const userId = req.params?.userId;
-    const data = req.body;
-    try{
-        const ALLOWED_UPDATE = ["photoUrl", "about", "gender", "age", "skills"];
-        const isUpdateAllowed = Object.keys(data).every((k) =>
-            ALLOWED_UPDATE.includes(k)
-        );
-        if(!isUpdateAllowed){
-            throw new Error("Update not Allowed");
-        }
-
-        //Either on schema level or we can do this
-        // if(data?.skills.length > 10){
-        //     throw new Error("Skills can't be more than 10");
-        // }
-
-        const user = await User.findByIdAndUpdate(userId,
-             data, 
-             {returnDocument:"after", runValidators: true}
-            );
-        //console.log(user);
-        res.send("User updated successfully");
-    }catch(err){
-        res.status(500).send("Failed to update user "+ err.message);
-    }
+app.post("/sendConnectionRequest", userAuth, async (req, res) => {
+    const user = req.user;
+    res.send(user.firstName + " sends the connection request");
 })
 
 
