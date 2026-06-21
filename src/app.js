@@ -9,6 +9,7 @@ const { userAuth } = require("./middleware/auth");
 const authRouter = require('./routers/auth');
 const profileRouter = require('./routers/profile');
 const requestRouter = require('./routers/request');
+const userRouter = require("./routers/user");
 
 //This is used to convert JSON data to JS Object
 app.use(express.json());
@@ -18,6 +19,7 @@ app.use(cookieparses());
 app.use("/", authRouter);
 app.use("/", profileRouter);
 app.use("/", requestRouter);
+app.use("/", userRouter);
 
 app.delete("/logout", userAuth, async (req, res) => {
     try{
