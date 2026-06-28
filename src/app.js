@@ -10,7 +10,17 @@ const authRouter = require('./routers/auth');
 const profileRouter = require('./routers/profile');
 const requestRouter = require('./routers/request');
 const userRouter = require("./routers/user");
+const cors = require("cors");
 
+require('dotenv').config()
+
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}))
+
+// This will allow CORS preflight handling through the global middleware.
+// Express 5 already supports OPTIONS for registered routes, so a separate app.options call is not needed here.
 //This is used to convert JSON data to JS Object
 app.use(express.json());
 //This is use to read the cookie
@@ -40,8 +50,8 @@ app.delete("/logout", userAuth, async (req, res) => {
 
 connectDB().then(() => {
     console.log("Database connection successful");
-    app.listen(3000, () => {
-        console.log("Server is created on port 3000....");
+    app.listen(process.env.PORT, () => {
+        console.log("Server is created on port " + process.env.PORT);
     });   //Listen on some port
 }).catch((err) => {
     console.log("Database connection failed");

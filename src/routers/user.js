@@ -4,7 +4,7 @@ const {userAuth} = require("../middleware/auth");
 const ConnectionRequestModel = require("../models/connectionRequest");
 const User = require("../models/user");
 
-const USER_SAFE_DATA = "firstName lastName photoUrl skills"
+const USER_SAFE_DATA = "firstName lastName photoUrl skills age gender about"
 
 //Get all pending connection request for the logged in user
 userRouter.get("/user/requests/received", userAuth, async (req, res) => {
@@ -98,7 +98,7 @@ userRouter.get("/feed", userAuth, async (req, res) => {
                 {_id: { $nin: Array.from(hideUsers) }},
                 {_id: { $ne: loggedInUser._id}}
             ]
-        }).select(USER_SAFE_DATA).skip(skip).limit(limit);
+        }).select("firstName lastName about age gender photoUrl skills").skip(skip).limit(limit);
 
         res.status(200).json({
             data: users

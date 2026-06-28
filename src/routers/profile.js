@@ -8,16 +8,16 @@ const { validateProfileData, validateSignUpData, validateForgotPassword } = requ
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
     try{
         const user = req.user;
-        res.send(user);
+        res.status(200).json({message: "User Fetch Successfully", data: user});
     }catch(err){
         res.status(400).send("ERROR : "+err.message);
     }
 });
 
-profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
+profileRouter.put("/profile/edit", userAuth, async (req, res) => {
     try{
     if(!validateProfileData(req)){
-        res.status(400).send("Invalid Field");
+        return res.status(400).send("Invalid Field");
     }
     
     const loggedInUser = req.user;
@@ -26,7 +26,7 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     await loggedInUser.save();
 
     res.json({Message: `${loggedInUser.firstName}, your profile is updated successfully`,
-        Data: loggedInUser
+        data: loggedInUser
     });
     }catch(err){
         res.status(400).send("ERROR " + err.message);
