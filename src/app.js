@@ -11,6 +11,8 @@ const profileRouter = require('./routers/profile');
 const requestRouter = require('./routers/request');
 const userRouter = require("./routers/user");
 const cors = require("cors");
+const http = require("http");
+const initializeSocket = require("./utils/socket");
 
 require('dotenv').config()
 
@@ -31,26 +33,14 @@ app.use("/", profileRouter);
 app.use("/", requestRouter);
 app.use("/", userRouter);
 
-app.delete("/logout", userAuth, async (req, res) => {
-    try{
-        const user = req.body.emailId;
+const server = http.createServer(app);
 
-        if(!user){
-            throw new Error("Need to login first");
-        }
-        const id = user._id;
-        await User.findByIdAndDelete(id);
-
-        res.status(200).send("Logout Successfully");
-    }catch(err){
-        res.status(500).send("ERROR " + err.message);
-    }
-})
+initializeSocket(server);
 
 
 connectDB().then(() => {
     console.log("Database connection successful");
-    app.listen(process.env.PORT, () => {
+    server.listen(process.env.PORT, () => {
         console.log("Server is created on port " + process.env.PORT);
     });   //Listen on some port
 }).catch((err) => {
